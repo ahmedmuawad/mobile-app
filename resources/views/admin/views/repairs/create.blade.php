@@ -60,7 +60,7 @@
         {{-- عرض السعر --}}
         <div class="form-group mb-3">
             <label>سعر المنتج</label>
-            <input type="text" id="spare_part_price" class="form-control" readonly>
+        <input type="text" id="spare_part_price" name="spare_part_price" class="form-control" readonly>
         </div>
 
         {{-- تكلفة المصنعية --}}
@@ -75,11 +75,11 @@
             <input type="number" name="discount" id="discount" step="0.01" min="0" class="form-control" value="0" oninput="calculateTotal()">
         </div>
 
-        {{-- عرض الإجمالي --}}
-        <div class="form-group mb-3">
-            <label>الإجمالي</label>
-            <input type="text" id="total" class="form-control bg-light" readonly>
-        </div>
+{{-- عرض الإجمالي --}}
+<div class="form-group mb-3">
+    <label>الإجمالي</label>
+<input type="text" id="total" class="form-control bg-light" readonly>
+</div>
 
         {{-- حالة الجهاز --}}
         <div class="form-group mb-3">
@@ -92,9 +92,9 @@
         </div>
         {{-- تاريخ الاستلام --}}
         <div class="form-group">
-    <label>المبلغ المدفوع</label>
-    <input type="number" name="paid" class="form-control" value="0" min="0" step="0.01">
-</div>
+            <label for="paid">المبلغ المدفوع الآن</label>
+            <input type="number" step="0.01" name="paid" class="form-control" value="0">
+        </div>
 
 
 
@@ -106,6 +106,15 @@
             <a href="{{ route('admin.repairs.index') }}" class="btn btn-secondary">رجوع</a>
         </div>
     </form>
+    @if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 </div>
 @endsection
 
@@ -157,5 +166,15 @@
         document.getElementById('spare_part_price').value = '';
         document.getElementById('total').value = '';
     }
+    document.querySelector('form').addEventListener('submit', function(e) {
+    const repairCost = parseFloat(document.querySelector('[name="repair_cost"]').value) || 0;
+    const partPrice = parseFloat(document.getElementById('spare_part_price').value) || 0;
+
+    if (repairCost === 0 && partPrice === 0) {
+        alert('⚠️ يجب إدخال تكلفة المصنعية أو اختيار قطعة غيار.');
+        e.preventDefault();
+    }
+});
+
 </script>
 @endpush

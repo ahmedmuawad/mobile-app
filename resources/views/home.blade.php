@@ -1,71 +1,106 @@
 @extends('layouts.app')
 
+@section('title', 'لوحة التحكم')
+
 @section('content')
 <div class="container-fluid">
-    <!-- العنوان -->
-    <div class="row mb-3">
-        <div class="col">
-            <h1 class="m-0 text-dark">لوحة التحكم</h1>
-        </div>
-    </div>
-
-    <!-- كروت الإحصائيات -->
     <div class="row">
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-info">
-                <div class="inner">
-                    <h3>150</h3>
-                    <p>الطلبات الجديدة</p>
+
+        {{-- إحصائيات اليوم --}}
+        <div class="col-12 mb-3">
+            <h4 class="mb-3">إحصائيات اليوم</h4>
+        </div>
+        @php
+            $cards = [
+                ['label' => 'مبيعات اليوم', 'value' => $today_sales, 'color' => 'success'],
+                ['label' => 'مصروفات اليوم', 'value' => $today_expenses, 'color' => 'danger'],
+                ['label' => 'مبيعات الصيانة', 'value' => $today_repairs, 'color' => 'primary'],
+                ['label' => 'مشتريات اليوم', 'value' => $today_purchases, 'color' => 'warning'],
+                ['label' => 'أرباح اليوم', 'value' => $today_profit, 'color' => 'info'],
+            ];
+        @endphp
+
+        @foreach($cards as $card)
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="small-box bg-{{ $card['color'] }}">
+                    <div class="inner">
+                        <h4>{{ number_format($card['value'], 2) }}</h4>
+                        <p>{{ $card['label'] }}</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-                <a href="#" class="small-box-footer">المزيد <i class="fas fa-arrow-circle-left"></i></a>
             </div>
+        @endforeach
+
+        {{-- رسم بياني لآخر 7 أيام --}}
+        <div class="col-12 mt-5">
+            <h4 class="mb-3">آخر 7 أيام</h4>
+            <canvas id="weeklyChart" height="120"></canvas>
         </div>
 
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-success">
-                <div class="inner">
-                    <h3>53%</h3>
-                    <p>نسبة الإنجاز</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <a href="#" class="small-box-footer">المزيد <i class="fas fa-arrow-circle-left"></i></a>
-            </div>
+        {{-- ملخص الشهر --}}
+        <div class="col-12 mt-5">
+            <h4 class="mb-3">ملخص الشهر الحالي</h4>
         </div>
+        @php
+            $month_cards = [
+                ['label' => 'مبيعات الشهر', 'value' => $month_sales, 'color' => 'success'],
+                ['label' => 'مصروفات الشهر', 'value' => $month_expenses, 'color' => 'danger'],
+                ['label' => 'مبيعات الصيانة', 'value' => $month_repairs, 'color' => 'primary'],
+                ['label' => 'مشتريات الشهر', 'value' => $month_purchases, 'color' => 'warning'],
+                ['label' => 'أرباح الشهر', 'value' => $month_profit, 'color' => 'info'],
+            ];
+        @endphp
 
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-warning">
-                <div class="inner">
-                    <h3>44</h3>
-                    <p>المستخدمين المسجلين</p>
+        @foreach($month_cards as $card)
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="small-box bg-{{ $card['color'] }}">
+                    <div class="inner">
+                        <h4>{{ number_format($card['value'], 2) }}</h4>
+                        <p>{{ $card['label'] }}</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <a href="#" class="small-box-footer">المزيد <i class="fas fa-arrow-circle-left"></i></a>
             </div>
-        </div>
+        @endforeach
 
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-danger">
-                <div class="inner">
-                    <h3>65</h3>
-                    <p>الزيارات اليوم</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <a href="#" class="small-box-footer">المزيد <i class="fas fa-arrow-circle-left"></i></a>
-            </div>
-        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    const weeklyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @json($last_7_days->pluck('date')),
+            datasets: [{
+                label: 'إجمالي المبيعات',
+                data: @json($last_7_days->pluck('total')),
+                backgroundColor: 'rgba(0, 123, 255, 0.3)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 10
+                    }
+                }
+            }
+        }
+    });
+</script>
+@endpush

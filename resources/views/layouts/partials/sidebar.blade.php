@@ -14,7 +14,7 @@
         <nav class="mt-2">
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
                 <li class="nav-item">
-                    <a href="{{ url('/home') }}" class="nav-link {{ Request::is('home') ? 'active' : '' }}">
+                    <a href="{{ route('admin.home') }}" class="nav-link {{ Request::is('admin/home*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-house-user"></i>
                         <p>الصفحة الرئيسية</p>
                     </a>

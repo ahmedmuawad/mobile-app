@@ -7,17 +7,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Repair extends Model
 {
     use HasFactory;
+        protected $fillable = [
+            'customer_id',
+            'customer_name',
+            'device_type',
+            'problem_description',
+            'spare_part_id',
+            'repair_cost',
+            'discount',
+            'total',
+            'status',
+            'paid',        // ✅ أضف هذا
+            'remaining',   // ✅ وأضف هذا أيضًا
+        ];
 
-    protected $fillable = [
-        'customer_id',
-        'customer_name',
-        'device_type',
-        'problem_description',
-        'spare_part_id',
-        'status',
-        'repair_cost',
-        'total',
-    ];
 
     public function customer()
     {

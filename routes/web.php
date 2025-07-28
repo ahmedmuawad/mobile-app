@@ -11,9 +11,7 @@ use App\Http\Controllers\RepairController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ExpenseController;
-
-
-
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,51 +26,51 @@ Route::get('/', function () {
 
 // مسار تسجيل الدخول/التسجيل
 Auth::routes();
-
-// صفحة الهوم (لوحة التحكم الرئيسية)
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('admin/home', [App\Http\Controllers\DashboardController::class, 'index'])->name('admin.home');
 
 // مجموعة Routes داخل لوحة التحكم
 Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
+    // الصفحة الرئيسية (Dashboard)
+    // Route::get('/home', [DashboardController::class, 'index'])->name('home');
+
     // التصنيفات
     Route::resource('categories', CategoryController::class);
-    
+
     // المنتجات
     Route::resource('products', ProductController::class);
+
     // العملاء 
     Route::resource('customers', CustomerController::class);
-   
+
     // المبيعات 
     Route::resource('sales', SaleController::class);
-    // الاعدادات
+
+    // الإعدادات
     Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
 
-    // الصيانه
-    // راوت جلب المنتجات حسب التصنيف
+    // الصيانة
+    // جلب المنتجات حسب التصنيف
     Route::get('/repairs/products-by-category/{id}', [RepairController::class, 'getProductsByCategory'])->name('repairs.products-by-category');
- 
-    // راوت رئيسي لفواتير الصيانة باستخدام resource
-    Route::resource('/repairs', RepairController::class)->names('repairs');
-    // سداد مستحقات
-// صفحة عرض نموذج السداد
+
+    // فواتير الصيانة
+    Route::resource('repairs', RepairController::class);
+
+    // سداد مستحقات الصيانة
     Route::get('repairs/{id}/payment', [RepairController::class, 'showPaymentForm'])->name('repairs.payments.create');
-
-    // حفظ عملية السداد
-    Route::post('repairs/{id}/payment', [RepairController::class, 'storePayment'])->name('repairs.payments.store');   
-
+    Route::post('repairs/{id}/payment', [RepairController::class, 'storePayment'])->name('repairs.payments.store');
 
     // الموردين
-    Route::resource('suppliers', SupplierController::class)->names('suppliers');
+    Route::resource('suppliers', SupplierController::class);
 
     // المشتريات
-    Route::resource('purchases', PurchaseController::class)->names('purchases');
+    Route::resource('purchases', PurchaseController::class);
     Route::get('purchases/{purchase}/show', [PurchaseController::class, 'show'])->name('purchases.show');
 
-
-
+    // المصروفات
     Route::resource('expenses', ExpenseController::class);
 
+    // لو في راوتات إضافية لاحقًا:
     // Route::resource('services', ServiceController::class);
 });
