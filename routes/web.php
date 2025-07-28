@@ -10,6 +10,8 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RepairController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ExpenseController;
+
 
 
 
@@ -70,8 +72,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
 
 
-    Route::resource('expenses', \App\Http\Controllers\ExpenseController::class);
-
+    Route::resource('expenses', ExpenseController::class);
 
     // Route::resource('services', ServiceController::class);
 });
