@@ -76,6 +76,30 @@
                         <p>الاعدادات</p>
                     </a>
                 </li>
+                <li class="nav-item has-treeview {{ Request::is('admin/reports/*') ? 'menu-open' : '' }}">
+    <a href="#" class="nav-link {{ Request::is('admin/reports/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-chart-line"></i>
+        <p>
+            التقارير
+            <i class="right fas fa-angle-left"></i>
+        </p>
+    </a>
+    <ul class="nav nav-treeview pl-3">
+        <li class="nav-item">
+            <a href="{{ route('admin.reports.sales') }}" class="nav-link {{ Request::is('admin/reports/sales*') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>تقرير المبيعات</p>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.reports.purchases') }}" class="nav-link {{ Request::is('admin/reports/purchases*') ? 'active' : '' }}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>تقرير المشتريات</p>
+            </a>
+        </li>
+    </ul>
+</li>
+
                 {{-- روابط إضافية مستقبلاً --}}
             </ul>
         </nav>

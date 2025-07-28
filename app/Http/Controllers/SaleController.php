@@ -71,7 +71,7 @@ class SaleController extends Controller
                 $purchase_price = $product->purchase_price;
 
                 $subtotal = $sale_price * $quantity;
-                $profit = ($sale_price - $purchase_price) * $quantity;
+                $profit = ($saleItem->sale_price - $saleItem->cost_at_sale) * $saleItem->quantity;
 
                 $total += $subtotal;
                 $total_profit += $profit;
@@ -170,7 +170,9 @@ class SaleController extends Controller
                     'product_name' => $product->name,
                     'quantity' => $quantity,
                     'sale_price' => $sale_price,
-                    'purchase_price' => $purchase_price,
+                    'purchase_price' => $purchase_price, // ممكن تستغنى عنه
+                    'cost_at_sale' => $purchase_price,   // ✅ السعر المثبّت وقت البيع
+
                 ]);
             }
 

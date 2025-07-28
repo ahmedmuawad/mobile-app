@@ -12,6 +12,8 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +72,10 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
     // المصروفات
     Route::resource('expenses', ExpenseController::class);
+    
+    // التقارير
+    Route::get('/reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
+    Route::get('/reports/purchases', [ReportController::class, 'purchasesReport'])->name('reports.purchases');
 
     // لو في راوتات إضافية لاحقًا:
     // Route::resource('services', ServiceController::class);
