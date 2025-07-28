@@ -5,12 +5,16 @@
 @section('content')
 <div class="container">
     <h4>سداد مستحق لفاتورة #{{ $repair->id }}</h4>
-    
+    @php
+    $paidAmount = $repair->payments->sum('amount');
+    $remaining = $repair->total - $paidAmount;
+@endphp
+
     <p>الإجمالي: <strong>{{ number_format($repair->total, 2) }}</strong> جنيه</p>
     <p>المدفوع مسبقًا: <strong>{{ number_format($repair->payments->sum('amount'), 2) }}</strong> جنيه</p>
     <p>المتبقي: <strong>{{ number_format($repair->total - $repair->payments->sum('amount'), 2) }}</strong> جنيه</p>
 
-    <form action="{{ route('admin.repairs.payment.store', $repair->id) }}" method="POST">
+<form action="{{ route('admin.repairs.payments.store', $repair->id) }}" method="POST">
         @csrf
         <div class="form-group">
             <label>المبلغ المسدّد الآن:</label>

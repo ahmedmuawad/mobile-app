@@ -77,6 +77,15 @@
         </table>
 
         <button type="button" id="addItemBtn" class="btn btn-sm btn-secondary">+ إضافة منتج آخر</button>
+        <div class="form-group">
+            <label>المبلغ المدفوع (كاش)</label>
+            <input type="number" name="paid_amount" class="form-control" min="0" step="0.01" value="0" required>
+        </div>
+
+        <div class="form-group">
+            <label>المتبقي (يُحسب تلقائيًا)</label>
+            <input type="text" id="remainingAmount" class="form-control" disabled>
+        </div>
 
         <div class="form-group mt-3">
             <strong>الإجمالي الكلي: <span id="totalAmount">0.00</span> جنيه</strong>
@@ -139,6 +148,13 @@
         });
         document.getElementById('totalAmount').textContent = total.toFixed(2);
     }
+    document.addEventListener('input', function () {
+    const total = parseFloat(document.getElementById('totalAmount').textContent) || 0;
+    const paid = parseFloat(document.querySelector('input[name="paid_amount"]').value) || 0;
+    const remaining = total - paid;
+    document.getElementById('remainingAmount').value = remaining.toFixed(2);
+    });
+
 </script>
 @endpush
  

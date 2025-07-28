@@ -19,6 +19,8 @@
                         <th>نوع الجهاز</th>
                         <th>الحالة</th>
                         <th>الإجمالي</th>
+                        <th>المدفوع</th>
+                        <th>المتبقى</th>
                         <th>التاريخ</th>
                         <th>إجراءات</th>
                     </tr>
@@ -46,6 +48,12 @@
                                 <span class="badge bg-{{ $color }}">{{ $repair->status }}</span>
                             </td>
                             <td>{{ number_format($repair->total, 2) }} جنيه</td>
+                            @php
+                                    $paidAmount = $repair->payments->sum('amount');
+                                    $remaining = $repair->total - $paidAmount;
+                                @endphp
+                            <td><strong>{{ number_format($repair->payments->sum('amount'), 2) }}</strong> جنيه</td>
+                            <td><strong>{{ number_format($repair->total - $repair->payments->sum('amount'), 2) }}</strong> جنيه</td>
                             <td>{{ $repair->created_at->format('Y-m-d') }}</td>
                             <td>
                                 <a href="{{ route('admin.repairs.show', $repair->id) }}" class="btn btn-sm btn-info">👁️ عرض</a>

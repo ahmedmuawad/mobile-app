@@ -65,6 +65,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.expenses.index') }}" class="nav-link {{ Request::is('admin/expenses*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-wallet"></i>
+                        <p>المصروفات</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.settings.edit') }}" class="nav-link {{ Request::is('admin/settings*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-sliders-h"></i>
                         <p>الاعدادات</p>

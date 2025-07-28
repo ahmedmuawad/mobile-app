@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Repair;
 use App\Models\Setting;
 use App\Models\CustomerPayment;
+use App\Models\Expense;
 
 
 class RepairController extends Controller

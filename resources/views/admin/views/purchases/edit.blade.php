@@ -6,6 +6,24 @@
 <div class="container-fluid">
     <h4 class="mb-3">تعديل فاتورة شراء</h4>
 
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
     <form action="{{ route('admin.purchases.update', $purchase->id) }}" method="POST">
         @csrf
         @method('PUT')
@@ -42,30 +60,30 @@
             </thead>
             <tbody>
                 @foreach($purchase->items as $index => $item)
-                <tr>
-                    <td>
-                        <select name="items[{{ $index }}][product_id]" class="form-control" required>
-                            <option value="">-- اختر المنتج --</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}" {{ $product->id == $item->product_id ? 'selected' : '' }}>
-                                    {{ $product->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity" min="1"
-                            value="{{ $item->quantity }}" required>
-                    </td>
-                    <td>
-                        <input type="number" name="items[{{ $index }}][purchase_price]" class="form-control price" min="0" step="0.01"
-                            value="{{ $item->unit_price }}" required>
-                    </td>
-                    <td class="subtotal">{{ number_format($item->unit_price * $item->quantity, 2) }}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm remove-item">✖</button>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>
+                            <select name="items[{{ $index }}][product_id]" class="form-control" required>
+                                <option value="">-- اختر المنتج --</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product->id }}" {{ $product->id == $item->product_id ? 'selected' : '' }}>
+                                        {{ $product->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="items[{{ $index }}][quantity]" class="form-control quantity"
+                                   min="1" value="{{ $item->quantity }}" required>
+                        </td>
+                        <td>
+                            <input type="number" name="items[{{ $index }}][purchase_price]" class="form-control price"
+                                   min="0" step="0.01" value="{{ $item->unit_price }}" required>
+                        </td>
+                        <td class="subtotal">{{ number_format($item->unit_price * $item->quantity, 2) }}</td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-item">✖</button>
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
@@ -73,11 +91,42 @@
         <button type="button" id="addItemBtn" class="btn btn-sm btn-secondary">+ إضافة منتج آخر</button>
 
         <div class="form-group mt-3">
+            <label>المبلغ المدفوع (كاش)</label>
+            <input type="number" name="paid_amount" class="form-control" min="0" step="0.01"
+                   value="{{ old('paid_amount', $purchase->paid_amount) }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>المتبقي (يُحسب تلقائيًا)</label>
+            <input type="text" id="remainingAmount" class="form-control" disabled>
+        </div>
+
+        <div class="form-group mt-3">
             <strong>الإجمالي الكلي: <span id="totalAmount">0.00</span> جنيه</strong>
         </div>
 
         <button type="submit" class="btn btn-success">💾 تحديث الفاتورة</button>
     </form>
+
+
+    <h5>المدفوعات السابقة:</h5>
+<table class="table">
+    <thead>
+        <tr>
+            <th>المبلغ</th>
+            <th>تاريخ الدفع</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($purchase->payments as $payment)
+            <tr>
+                <td>{{ number_format($payment->amount, 2) }}</td>
+                <td>{{ $payment->payment_date }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
 </div>
 @endsection
 
@@ -114,12 +163,14 @@
     });
 
     document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('quantity') || e.target.classList.contains('price')) {
+        if (e.target.classList.contains('quantity') || e.target.classList.contains('price') || e.target.name === "paid_amount") {
             const row = e.target.closest('tr');
-            const qty = parseFloat(row.querySelector('.quantity').value) || 0;
-            const price = parseFloat(row.querySelector('.price').value) || 0;
-            const subtotal = (qty * price).toFixed(2);
-            row.querySelector('.subtotal').textContent = subtotal;
+            if (row) {
+                const qty = parseFloat(row.querySelector('.quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                const subtotal = (qty * price).toFixed(2);
+                row.querySelector('.subtotal').textContent = formatNumber(subtotal);
+            }
             calculateTotal();
         }
     });
@@ -127,9 +178,19 @@
     function calculateTotal() {
         let total = 0;
         document.querySelectorAll('.subtotal').forEach(el => {
-            total += parseFloat(el.textContent) || 0;
+            let value = el.textContent.replace(/,/g, '');
+            total += parseFloat(value) || 0;
         });
-        document.getElementById('totalAmount').textContent = total.toFixed(2);
+
+        document.getElementById('totalAmount').textContent = formatNumber(total);
+
+        const paid = parseFloat(document.querySelector('input[name="paid_amount"]').value) || 0;
+        const remaining = total - paid;
+        document.getElementById('remainingAmount').value = formatNumber(remaining);
+    }
+
+    function formatNumber(number) {
+        return Number(number).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     window.onload = calculateTotal;

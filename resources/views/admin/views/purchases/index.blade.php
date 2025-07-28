@@ -20,6 +20,8 @@
                     <th>#</th>
                     <th>المورد</th>
                     <th>الإجمالي</th>
+                    <th>المدفوع</th>
+                    <th>المتبقى</th>
                     <th>التاريخ</th>
                     <th>ملاحظات</th>
                     <th>الخيارات</th>
@@ -30,12 +32,15 @@
                 <tr>
                     <td>{{ $purchase->id }}</td>
                     <td>{{ $purchase->supplier->name ?? '---' }}</td>
-                    <td>{{ number_format($purchase->total, 2) }} جنيه</td>
+                    <td>{{ number_format($purchase->total_amount, 2) }}</td>
+                    <td>{{ number_format($purchase->paid_amount, 2) }}</td>
+                    <td>{{ number_format($purchase->remaining_amount, 2) }}</td>
                     <td>{{ $purchase->created_at->format('Y-m-d H:i') }}</td>
                     <td>{{ $purchase->notes ?? '---' }}</td>
                     <td>
-                        <a href="{{ route('admin.purchases.edit', $purchase->id) }}" class="btn btn-sm btn-info">تعديل</a>
-
+                        <a href="{{ route('admin.purchases.show', $purchase->id) }}" class="btn btn-info btn-sm">عرض</a>
+                        <a href="{{ route('admin.purchases.edit', $purchase->id) }}" class="btn btn-warning btn-sm">تعديل</a>
+                        
                         <form action="{{ route('admin.purchases.destroy', $purchase->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
                             @csrf
                             @method('DELETE')

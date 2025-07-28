@@ -8,17 +8,17 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\PurchasePayment; // أضف هذا في الأعلى
+
 
 class PurchaseController extends Controller
 {
-    // عرض فواتير المشتريات
     public function index()
     {
         $purchases = Purchase::with('supplier')->latest()->get();
         return view('admin.views.purchases.index', compact('purchases'));
     }
 
-    // صفحة إنشاء فاتورة
     public function create()
     {
         $suppliers = Supplier::all();
@@ -26,35 +26,38 @@ class PurchaseController extends Controller
         return view('admin.views.purchases.create', compact('suppliers', 'products'));
     }
 
-    // حفظ الفاتورة الجديدة
+
     public function store(Request $request)
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'items'       => 'required|array|min:1',
-            'items.*.product_id'    => 'required|exists:products,id',
-            'items.*.quantity'      => 'required|integer|min:1',
-            'items.*.purchase_price'=> 'required|numeric|min:0',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.quantity'       => 'required|numeric|min:1',
+            'items.*.purchase_price' => 'required|numeric|min:0',
+            'paid_amount'            => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
 
         try {
             $purchase = Purchase::create([
-                'supplier_id' => $request->supplier_id,
-                'notes'       => $request->notes,
-                'total_amount'=> 0,
+                'supplier_id'     => $request->supplier_id,
+                'notes'           => $request->notes,
+                'total_amount'    => 0,
+                'paid_amount'     => 0,
+                'remaining_amount'=> 0,
             ]);
 
             $totalAmount = 0;
 
             foreach ($request->items as $item) {
-                $product = Product::find($item['product_id']);
+                $product = Product::findOrFail($item['product_id']);
+                $qty     = $item['quantity'];
+                $price   = $item['purchase_price'];
 
                 $oldStock = $product->stock;
                 $oldCost  = $product->purchase_price;
-                $qty      = $item['quantity'];
-                $price    = $item['purchase_price'];
 
                 $newStock = $oldStock + $qty;
                 $avgCost  = ($oldStock * $oldCost + $qty * $price) / ($newStock ?: 1);
@@ -75,7 +78,31 @@ class PurchaseController extends Controller
                 $totalAmount += $qty * $price;
             }
 
-            $purchase->update(['total_amount' => $totalAmount]);
+            $paidAmount = $request->input('paid_amount', 0);
+            $remaining  = $totalAmount - $paidAmount;
+
+            $purchase->update([
+                'total_amount'     => $totalAmount,
+                'paid_amount'      => $paidAmount,
+                'remaining_amount' => $remaining,
+            ]);
+
+            if ($paidAmount > 0) {
+                // حفظ الدفع في جدول purchase_payments
+                PurchasePayment::create([
+                    'purchase_id'  => $purchase->id,
+                    'amount'       => $paidAmount,
+                    'payment_date' => now(), // يمكنك تغييره لاحقًا إلى $request->payment_date
+                ]);
+
+                // تسجيله أيضاً كمصروف
+                \App\Models\Expense::create([
+                    'name'         => 'دفع كاش للمورد: ' . $purchase->supplier->name,
+                    'description'  => 'فاتورة شراء رقم #' . $purchase->id,
+                    'amount'       => $paidAmount,
+                    'expense_date' => now(), // نفس التاريخ
+                ]);
+            }
 
             DB::commit();
             return redirect()->route('admin.purchases.index')->with('success', '✅ تم حفظ الفاتورة بنجاح.');
@@ -86,7 +113,6 @@ class PurchaseController extends Controller
         }
     }
 
-    // صفحة تعديل الفاتورة
     public function edit(Purchase $purchase)
     {
         $suppliers = Supplier::all();
@@ -96,44 +122,39 @@ class PurchaseController extends Controller
         return view('admin.views.purchases.edit', compact('purchase', 'suppliers', 'products'));
     }
 
-    // تعديل الفاتورة
-    public function update(Request $request, Purchase $purchase)
+    public function update(Request $request, $id)
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'items'       => 'required|array|min:1',
-            'items.*.product_id'    => 'required|exists:products,id',
-            'items.*.quantity'      => 'required|integer|min:1',
-            'items.*.purchase_price'=> 'required|numeric|min:0',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.quantity'       => 'required|numeric|min:1',
+            'items.*.purchase_price' => 'required|numeric|min:0',
+            'paid_amount'            => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
 
         try {
-            // استرجاع الكميات القديمة للمخزون
+            $purchase = Purchase::findOrFail($id);
+
+            // استرجاع الكميات من المخزون
             foreach ($purchase->items as $oldItem) {
-                $product = Product::find($oldItem->product_id);
+                $product = Product::findOrFail($oldItem->product_id);
                 $product->stock -= $oldItem->quantity;
                 $product->save();
             }
 
-            // حذف العناصر القديمة
-            $purchase->items()->delete();
-
-            $purchase->update([
-                'supplier_id' => $request->supplier_id,
-                'notes'       => $request->notes,
-            ]);
+            // حذف الأصناف القديمة
+            PurchaseItem::where('purchase_id', $purchase->id)->delete();
 
             $totalAmount = 0;
 
-            // إضافة الأصناف الجديدة
             foreach ($request->items as $item) {
-                $product = Product::find($item['product_id']);
+                $product = Product::findOrFail($item['product_id']);
                 $qty     = $item['quantity'];
                 $price   = $item['purchase_price'];
 
-                // تحديث المخزون ومتوسط التكلفة
                 $oldStock = $product->stock;
                 $oldCost  = $product->purchase_price;
 
@@ -141,7 +162,7 @@ class PurchaseController extends Controller
                 $avgCost  = ($oldStock * $oldCost + $qty * $price) / ($newStock ?: 1);
 
                 $product->update([
-                    'stock' => $newStock,
+                    'stock'          => $newStock,
                     'purchase_price' => $avgCost,
                 ]);
 
@@ -156,10 +177,28 @@ class PurchaseController extends Controller
                 $totalAmount += $qty * $price;
             }
 
-            $purchase->update(['total_amount' => $totalAmount]);
+            $paidAmount = $request->input('paid_amount', 0);
+            $remaining  = $totalAmount - $paidAmount;
+
+            $purchase->update([
+                'supplier_id'     => $request->supplier_id,
+                'notes'           => $request->notes,
+                'total_amount'    => $totalAmount,
+                'paid_amount'     => $paidAmount,
+                'remaining_amount'=> $remaining,
+            ]);
+
+            // تسجيل الدفع الجديد إذا وجد
+            if ($paidAmount > 0) {
+                PurchasePayment::create([
+                    'purchase_id'  => $purchase->id,
+                    'amount'       => $paidAmount,
+                    'payment_date' => now(),
+                ]);
+            }
 
             DB::commit();
-            return redirect()->route('admin.purchases.index')->with('success', '✅ تم تعديل الفاتورة بنجاح.');
+            return redirect()->route('admin.purchases.index')->with('success', '✅ تم تحديث الفاتورة بنجاح.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -167,20 +206,18 @@ class PurchaseController extends Controller
         }
     }
 
-    // حذف الفاتورة
+
     public function destroy(Purchase $purchase)
     {
         DB::beginTransaction();
 
         try {
-            // استرجاع الكميات للمخزون
             foreach ($purchase->items as $item) {
                 $product = Product::find($item->product_id);
                 $product->stock -= $item->quantity;
                 $product->save();
             }
 
-            // حذف الأصناف والفاتورة
             $purchase->items()->delete();
             $purchase->delete();
 
@@ -192,4 +229,10 @@ class PurchaseController extends Controller
             return back()->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
         }
     }
+            public function show(Purchase $purchase)
+        {
+            $purchase->load(['supplier', 'items.product', 'payments']);
+            return view('admin.views.purchases.show', compact('purchase'));
+        }
+
 }

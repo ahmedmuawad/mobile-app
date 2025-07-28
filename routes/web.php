@@ -66,6 +66,11 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
     // المشتريات
     Route::resource('purchases', PurchaseController::class)->names('purchases');
+    Route::get('purchases/{purchase}/show', [PurchaseController::class, 'show'])->name('purchases.show');
+
+
+
+    Route::resource('expenses', \App\Http\Controllers\ExpenseController::class);
 
 
     // Route::resource('services', ServiceController::class);
