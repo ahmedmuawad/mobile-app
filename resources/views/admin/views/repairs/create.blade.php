@@ -90,6 +90,14 @@
                 <option value="لم يتم الإصلاح">لم يتم الإصلاح</option>
             </select>
         </div>
+        {{-- تاريخ الاستلام --}}
+        <div class="form-group">
+    <label>المبلغ المدفوع</label>
+    <input type="number" name="paid" class="form-control" value="0" min="0" step="0.01">
+</div>
+
+
+
 
         {{-- زر الحفظ وزر إعادة التعيين --}}
         <div class="form-group mt-4">

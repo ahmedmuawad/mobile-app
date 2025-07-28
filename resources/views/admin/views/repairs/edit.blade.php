@@ -102,11 +102,21 @@
                 <option value="لم يتم الإصلاح" {{ $repair->status == 'لم يتم الإصلاح' ? 'selected' : '' }}>لم يتم الإصلاح</option>
             </select>
         </div>
+    <p>المتبقي: <strong>{{ number_format($repair->total - $repair->payments->sum('amount'), 2) }}</strong> جنيه</p>
 
         {{-- الأزرار --}}
         <div class="form-group mt-4">
-            <button type="submit" class="btn btn-primary">💾 تحديث الفاتورة</button>
-            <a href="{{ route('admin.repairs.index') }}" class="btn btn-secondary">رجوع</a>
+                    <button type="submit" class="btn btn-primary">💾 تحديث الفاتورة</button>
+        @php
+            $paidAmount = $repair->payments ? $repair->payments->sum('amount') : 0;
+        @endphp
+
+        @if($repair->total - $paidAmount > 0)
+        <a href="{{ route('admin.repairs.payments.create', $repair->id) }}" class="btn btn-sm btn-success">
+            💵 سداد متبقي
+        </a>
+        @endif            
+        <a href="{{ route('admin.repairs.index') }}" class="btn btn-secondary">رجوع</a>
         </div>
     </form>
 </div>

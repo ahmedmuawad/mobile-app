@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -20,15 +19,18 @@ class Repair extends Model
         'total',
     ];
 
-    // العلاقة مع العميل (إن وجد)
     public function customer()
     {
         return $this->belongsTo(Customer::class);
     }
 
-    // العلاقة مع قطعة الغيار
     public function sparePart()
     {
         return $this->belongsTo(Product::class, 'spare_part_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\CustomerPayment::class, 'repair_id');
     }
 }

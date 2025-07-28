@@ -8,6 +8,8 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Repair;
 use App\Models\Setting;
+use App\Models\CustomerPayment;
+
 
 class RepairController extends Controller
 {
@@ -38,9 +40,19 @@ class RepairController extends Controller
         ]);
 
         $sparePartPrice = 0;
+
         if ($request->spare_part_id) {
             $sparePart = Product::find($request->spare_part_id);
-            $sparePartPrice = $sparePart?->sale_price ?? 0;
+
+            if (!$sparePart || $sparePart->stock < 1) {
+                return back()->with('error', '❌ الكمية غير كافية من قطعة الغيار المختارة.')->withInput();
+            }
+
+            // خصم 1 من الاستوك
+            $sparePart->stock -= 1;
+            $sparePart->save();
+
+            $sparePartPrice = $sparePart->sale_price;
         }
 
         $total = $sparePartPrice + $request->repair_cost - ($request->discount ?? 0);
@@ -57,6 +69,18 @@ class RepairController extends Controller
         $repair->total               = $total;
         $repair->status              = $request->status;
         $repair->save();
+        $paid = $request->paid ?? 0;
+        $remaining = $total - $paid;
+
+        if ($remaining < 0) $remaining = 0;
+        if ($paid < 0) $paid = 0;
+
+      
+$remaining = $repair->total - $paidAmount;
+
+if ($request->amount > $remaining) {
+    return back()->with('error', '❌ المبلغ المدفوع يتجاوز المتبقي على الفاتورة.');
+}
 
         return redirect()->route('admin.repairs.index')->with('success', '✅ تم حفظ فاتورة الصيانة بنجاح.');
     }
@@ -119,8 +143,8 @@ class RepairController extends Controller
     }
 
     public function show($id)
-{
-    $repair = Repair::with(['sparePart', 'customer'])->findOrFail($id);
+    {
+        $repair = Repair::with(['sparePart', 'customer', 'payments'])->findOrFail($id);
 
     // جلب الإعدادات العامة
     $globalSetting = Setting::first(); // هذا هو الصحيح
@@ -140,4 +164,39 @@ class RepairController extends Controller
         $products = Product::where('category_id', $categoryId)->get(['id', 'name', 'sale_price']);
         return response()->json($products);
     }
+        public function payments()
+    {
+        return $this->hasMany(CustomerPayment::class);
+    }
+    public function showPaymentForm($id)
+    {
+        $repair = Repair::with('payments')->findOrFail($id);
+        return view('admin.views.repairs.payment', compact('repair'));
+    }
+
+    public function storePayment(Request $request, $id)
+    {
+        
+        $repair = Repair::findOrFail($id);
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:' . ($repair->total - $repair->payments->sum('amount')),
+        ]);
+
+        CustomerPayment::create([
+            'repair_id'   => $repair->id,
+            'amount'      => $request->amount,
+            'payment_date'=> now(),
+        ]);
+
+        // تسجّل المصروف في جدول المصروفات
+        \App\Models\Expense::create([
+            'amount'      => $request->amount,
+            'description' => 'سداد مستحق من العميل لفاتورة صيانة #' . $repair->id,
+            'date'        => now(),
+        ]);
+
+        return redirect()->route('admin.repairs.index')->with('success', '✅ تم تسجيل السداد بنجاح.');
+    }
+
 }

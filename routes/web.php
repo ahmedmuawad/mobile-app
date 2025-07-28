@@ -50,9 +50,15 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     // الصيانه
     // راوت جلب المنتجات حسب التصنيف
     Route::get('/repairs/products-by-category/{id}', [RepairController::class, 'getProductsByCategory'])->name('repairs.products-by-category');
-
+ 
     // راوت رئيسي لفواتير الصيانة باستخدام resource
     Route::resource('/repairs', RepairController::class)->names('repairs');
+    // سداد مستحقات
+// صفحة عرض نموذج السداد
+    Route::get('repairs/{id}/payment', [RepairController::class, 'showPaymentForm'])->name('repairs.payments.create');
+
+    // حفظ عملية السداد
+    Route::post('repairs/{id}/payment', [RepairController::class, 'storePayment'])->name('repairs.payments.store');   
 
 
     // الموردين

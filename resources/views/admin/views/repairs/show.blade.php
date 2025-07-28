@@ -58,6 +58,9 @@
                     <strong>الإجمالي:</strong> {{ number_format($repair->total, 2) }} جنيه
                 </div>
             </div>
+            <p><strong>الإجمالي:</strong> {{ number_format($repair->total, 2) }} جنيه</p>
+            <p><strong>المدفوع:</strong> {{ number_format($repair->payments->sum('amount'), 2) }} جنيه</p>
+            <p><strong>المتبقي:</strong> {{ number_format($repair->total - $repair->payments->sum('amount'), 2) }} جنيه</p>
 
             <div class="mb-3">
                 <strong>الحالة:</strong>
@@ -65,10 +68,41 @@
                     {{ $repair->status }}
                 </span>
             </div>
+           
 
             <div class="mb-3">
                 <strong>تاريخ الإنشاء:</strong> {{ $repair->created_at->format('Y-m-d H:i') }}
             </div>
+
+            @if($repair->total - $repair->payments->sum('amount') > 0)
+    <a href="{{ route('admin.repairs.payments.create', $repair->id) }}" class="btn btn-success">
+        💵 سداد المتبقي
+    </a>
+
+    <h4>الدفعات السابقة:</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>المبلغ</th>
+            <th>التاريخ</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($repair->payments as $payment)
+            <tr>
+                <td>{{ number_format($payment->amount, 2) }} جنيه</td>
+                <td>{{ $payment->created_at->format('Y-m-d H:i') }}</td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="2">لا يوجد دفعات مسجلة.</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+
+@endif
+
         </div>
     </div>
 </div>
